@@ -10,6 +10,7 @@ import (
 
 	"github.com/RadekKusiak71/taskmanager/db"
 	"github.com/RadekKusiak71/taskmanager/types"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
@@ -37,6 +38,7 @@ func (s *APIServer) Run() error {
 	router.HandleFunc("/tasks/", s.createTask).Methods("POST")
 	router.HandleFunc("/tasks/{id}/", s.updateTask).Methods("PUT")
 	router.HandleFunc("/register/", s.registerUser).Methods("POST")
+	router.HandleFunc("/login/", s.loginCustomer).Methods("POST")
 
 	log.Printf("API server running on port: %s", s.addr)
 	return http.ListenAndServe(s.addr, router)
@@ -152,7 +154,7 @@ func (s *APIServer) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newCustomer types.CreateCustomer
+	var newCustomer types.RegisterRequest
 
 	err = json.Unmarshal(bs, &newCustomer)
 	if err != nil {
@@ -171,4 +173,35 @@ func (s *APIServer) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"message": "User created"})
+}
+
+func (s *APIServer) loginCustomer(w http.ResponseWriter, r *http.Request) {
+	bs, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var loginRequest types.LoginRequest
+
+	err = json.Unmarshal(bs, &loginRequest)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	customer, err := s.db.GetCustomerByUsername(loginRequest.Username)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(loginRequest.Password)); err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println("Login successfull")
+	json.NewEncoder(w).Encode(map[string]string{"sessionid": uuid.NewV4().String()})
 }

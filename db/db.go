@@ -73,7 +73,7 @@ func (s PostgresDB) CreateTaskTable() error {
 	return nil
 }
 
-func (s PostgresDB) CreateCustomer(c types.CreateCustomer) error {
+func (s PostgresDB) CreateCustomer(c types.RegisterRequest) error {
 	query := `INSERT INTO customer (username,email,password)
 		Values
 		($1,$2,$3)`
@@ -158,6 +158,17 @@ func (s PostgresDB) DeleteByTaskID(taskID string) error {
 	return nil
 }
 
+func (s PostgresDB) GetCustomerByUsername(username string) (*types.Customer, error) {
+	rows, err := s.db.Query("SELECT * FROM customer WHERE username = $1", username)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		return convertToCustomer(rows)
+	}
+	return nil, fmt.Errorf("customer %s not found", username)
+}
+
 func convertToTask(rows *sql.Rows) (*types.Task, error) {
 	task := new(types.Task)
 	err := rows.Scan(
@@ -169,4 +180,15 @@ func convertToTask(rows *sql.Rows) (*types.Task, error) {
 		&task.Timestamp,
 	)
 	return task, err
+}
+
+func convertToCustomer(rows *sql.Rows) (*types.Customer, error) {
+	customer := new(types.Customer)
+	err := rows.Scan(
+		&customer.UserID,
+		&customer.Username,
+		&customer.Email,
+		&customer.Password,
+	)
+	return customer, err
 }
