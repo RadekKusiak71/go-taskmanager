@@ -84,6 +84,15 @@ func (s PostgresDB) CreateCustomer(c CreateCustomer) error {
 	return nil
 }
 
+func (s PostgresDB) UpdateTask(taskID string, values UpdateTask) (*Task, error) {
+	query := `UPDATE task SET title=$1, body=$2, status=$3 WHERE task_id=$4`
+	_, err := s.db.Exec(query, values.Title, values.Body, values.Status, taskID)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetTaskByID(taskID)
+}
+
 func (s PostgresDB) CreateTask(t CreateTask) error {
 	query := `INSERT INTO task (task_id,user_id,title,body,status) VALUES
 		($1,$2,$3,$4,$5)`
@@ -105,7 +114,7 @@ func (s PostgresDB) GetTaskByID(taskID string) (*Task, error) {
 		return convertToTask(rows)
 	}
 
-	return nil, fmt.Errorf("account %s not found", taskID)
+	return nil, fmt.Errorf("task %s not found", taskID)
 }
 
 func (s PostgresDB) GetTasks() ([]*Task, error) {

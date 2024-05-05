@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	uuid "github.com/satori/go.uuid"
 )
 
 type APIServer struct {
@@ -31,6 +32,8 @@ func (s *APIServer) Run() error {
 	router.HandleFunc("/tasks/user/{id}/", s.getTaskForUser)
 	router.HandleFunc("/tasks/", s.getTasks).Methods("GET")
 	router.HandleFunc("/tasks/", s.createTask).Methods("POST")
+	router.HandleFunc("/tasks/{id}/", s.updateTask).Methods("PUT")
+	router.HandleFunc("/register/", s.registerUser).Methods("POST")
 
 	log.Printf("API server running on port: %s", s.addr)
 	return http.ListenAndServe(s.addr, router)
@@ -82,6 +85,9 @@ func (s *APIServer) createTask(w http.ResponseWriter, r *http.Request) {
 
 	var newCreateTask CreateTask
 
+	tID := uuid.NewV4()
+	newCreateTask.TaskID = tID.String()
+
 	err = json.Unmarshal(bs, &newCreateTask)
 
 	if err != nil {
@@ -107,4 +113,59 @@ func (s *APIServer) deleteTaskById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"message": "Task deleted successfully"})
+}
+
+func (s *APIServer) updateTask(w http.ResponseWriter, r *http.Request) {
+	taskID := mux.Vars(r)["id"]
+	bs, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var updateValues UpdateTask
+	err = json.Unmarshal(bs, &updateValues)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	task, err := s.db.UpdateTask(taskID, updateValues)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	json.NewEncoder(w).Encode(task)
+}
+
+func (s *APIServer) registerUser(w http.ResponseWriter, r *http.Request) {
+	bs, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var newCustomer CreateCustomer
+
+	err = json.Unmarshal(bs, &newCustomer)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = newCustomer.cryptPassword()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = s.db.CreateCustomer(newCustomer)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]string{"message": "User created"})
 }
