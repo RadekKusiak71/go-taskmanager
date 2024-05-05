@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -8,16 +8,19 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/RadekKusiak71/taskmanager/db"
+	"github.com/RadekKusiak71/taskmanager/types"
+
 	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
 )
 
 type APIServer struct {
 	addr string
-	db   *PostgresDB
+	db   *db.PostgresDB
 }
 
-func NewAPIServer(addr string, db *PostgresDB) *APIServer {
+func NewAPIServer(addr string, db *db.PostgresDB) *APIServer {
 	return &APIServer{
 		addr: addr,
 		db:   db,
@@ -83,7 +86,7 @@ func (s *APIServer) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newCreateTask CreateTask
+	var newCreateTask types.CreateTask
 
 	tID := uuid.NewV4()
 	newCreateTask.TaskID = tID.String()
@@ -124,7 +127,7 @@ func (s *APIServer) updateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updateValues UpdateTask
+	var updateValues types.UpdateTask
 	err = json.Unmarshal(bs, &updateValues)
 
 	if err != nil {
@@ -149,7 +152,7 @@ func (s *APIServer) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newCustomer CreateCustomer
+	var newCustomer types.CreateCustomer
 
 	err = json.Unmarshal(bs, &newCustomer)
 	if err != nil {
@@ -157,7 +160,7 @@ func (s *APIServer) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = newCustomer.cryptPassword()
+	err = newCustomer.CryptPassword()
 	if err != nil {
 		log.Println(err)
 		return

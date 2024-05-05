@@ -1,4 +1,4 @@
-module main
+module github.com/RadekKusiak71/taskmanager
 
 go 1.22.2
 

@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/RadekKusiak71/taskmanager/types"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -72,7 +73,7 @@ func (s PostgresDB) CreateTaskTable() error {
 	return nil
 }
 
-func (s PostgresDB) CreateCustomer(c CreateCustomer) error {
+func (s PostgresDB) CreateCustomer(c types.CreateCustomer) error {
 	query := `INSERT INTO customer (username,email,password)
 		Values
 		($1,$2,$3)`
@@ -84,7 +85,7 @@ func (s PostgresDB) CreateCustomer(c CreateCustomer) error {
 	return nil
 }
 
-func (s PostgresDB) UpdateTask(taskID string, values UpdateTask) (*Task, error) {
+func (s PostgresDB) UpdateTask(taskID string, values types.UpdateTask) (*types.Task, error) {
 	query := `UPDATE task SET title=$1, body=$2, status=$3 WHERE task_id=$4`
 	_, err := s.db.Exec(query, values.Title, values.Body, values.Status, taskID)
 	if err != nil {
@@ -93,7 +94,7 @@ func (s PostgresDB) UpdateTask(taskID string, values UpdateTask) (*Task, error) 
 	return s.GetTaskByID(taskID)
 }
 
-func (s PostgresDB) CreateTask(t CreateTask) error {
+func (s PostgresDB) CreateTask(t types.CreateTask) error {
 	query := `INSERT INTO task (task_id,user_id,title,body,status) VALUES
 		($1,$2,$3,$4,$5)`
 
@@ -104,7 +105,7 @@ func (s PostgresDB) CreateTask(t CreateTask) error {
 	return nil
 }
 
-func (s PostgresDB) GetTaskByID(taskID string) (*Task, error) {
+func (s PostgresDB) GetTaskByID(taskID string) (*types.Task, error) {
 	rows, err := s.db.Query(`SELECT * FROM task WHERE task_id=$1`, taskID)
 	if err != nil {
 		return nil, err
@@ -117,12 +118,12 @@ func (s PostgresDB) GetTaskByID(taskID string) (*Task, error) {
 	return nil, fmt.Errorf("task %s not found", taskID)
 }
 
-func (s PostgresDB) GetTasks() ([]*Task, error) {
+func (s PostgresDB) GetTasks() ([]*types.Task, error) {
 	rows, err := s.db.Query(`SELECT * FROM task`)
 	if err != nil {
 		return nil, err
 	}
-	var tasks []*Task
+	var tasks []*types.Task
 	for rows.Next() {
 		task, err := convertToTask(rows)
 		if err != nil {
@@ -133,12 +134,12 @@ func (s PostgresDB) GetTasks() ([]*Task, error) {
 	return tasks, nil
 }
 
-func (s PostgresDB) GetTaskByUserID(userID int) ([]*Task, error) {
+func (s PostgresDB) GetTaskByUserID(userID int) ([]*types.Task, error) {
 	rows, err := s.db.Query(`SELECT * FROM task WHERE user_id=$1`, userID)
 	if err != nil {
 		return nil, err
 	}
-	var tasks []*Task
+	var tasks []*types.Task
 	for rows.Next() {
 		task, err := convertToTask(rows)
 		if err != nil {
@@ -157,8 +158,8 @@ func (s PostgresDB) DeleteByTaskID(taskID string) error {
 	return nil
 }
 
-func convertToTask(rows *sql.Rows) (*Task, error) {
-	task := new(Task)
+func convertToTask(rows *sql.Rows) (*types.Task, error) {
+	task := new(types.Task)
 	err := rows.Scan(
 		&task.TaskID,
 		&task.UserID,
