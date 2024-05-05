@@ -64,7 +64,7 @@ func (s PostgresDB) CreateTaskTable() error {
 		title VARCHAR(255),
 		body VARCHAR(255),
 		status BOOLEAN,
-		created_at timestamp
+		created_at timestamp default CURRENT_TIMESTAMP
 		);`
 	_, err := s.db.Exec(query)
 	if err != nil {
